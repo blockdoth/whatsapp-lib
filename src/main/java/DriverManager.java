@@ -36,7 +36,7 @@ public class DriverManager {
             options.setExperimentalOption("excludeSwitches", List.of("enable-automation"));
 
             driver = new RemoteWebDriver(service.getUrl(), options);
-            driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(30));
+            driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(2));
             return driver;
         } catch (IOException e) {
             throw new RuntimeException(e);
