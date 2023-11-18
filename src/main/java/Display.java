@@ -1,63 +1,40 @@
-import java.awt.image.BufferedImage;
-import java.awt.image.DataBufferInt;
-import java.io.File;
-import java.nio.IntBuffer;
 
-import javafx.application.Application;
-import javafx.scene.Group;
-import javafx.scene.Scene;
-import javafx.scene.image.*;
-import javafx.scene.image.Image;
-import javafx.stage.Stage;
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.WindowEvent;
 
-public class Display extends Application {
+public class Display {
 
-    private Stage stage;
+    JLabel label;
+    JFrame frame;
 
-    private ImageView imageView = new ImageView();
+    public void start() {
+        //Opens a window
+        frame = new JFrame("Image Display Example");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-    @Override
-    public void start(Stage primaryStage) {
-        stage = primaryStage;
-        // Set the stage (window) title
-        stage.setTitle("QR Code Display");
+        // Load an image (change the file path to your image)
+        ImageIcon imageIcon = new ImageIcon("src/main/resources/loadingGif.gif");
 
-        Image loadingGif = new Image("file:src/main/resources/loading.gif");
-        //Image qrCode = new Image("file:src/main/resources/QRCode.png");
+        // Create a JLabel to display the image
+        label = new JLabel();
+        label.setIcon(imageIcon);
+        label.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        frame.add(label);
+        frame.pack();
+        frame.setVisible(true);
 
 
-        imageView.setImage(loadingGif);
-
-        Group root = new Group(imageView);
-
-        Scene scene = new Scene(root, 264, 264); // Set the scene dimensions
-
-        stage.setScene(scene);
-        stage.show();
-        System.out.println("GUI started");
-        //waitForQrCode();
     }
 
-    private void waitForQrCode() {
-        while(true){
-            try{
-                File file = new File("file:src/main/resources/QRCode.png");
-                Image image = new Image(file.toURI().toString());
-                imageView.setImage(image);
-            }catch (Exception e){
-                System.out.println("No QR Code found");
-            }
-        }
-    }
-
-    public void displayQRCode() {
+    public void displayQRCode(Image qrCode) {
         //Opens a window with the QRcode using javaFX
-
-        launch();
+        //System.out.println(qrCode.getWidth(null) + "" + qrCode.getHeight(null));
+        label.setIcon(new ImageIcon(qrCode));
         System.out.println("QR Code displayed");
     }
 
     public void closeDisplay() {
-        //Closes a window
+        frame.setVisible(false);
     }
 }

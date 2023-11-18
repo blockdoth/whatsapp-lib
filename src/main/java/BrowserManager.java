@@ -11,54 +11,59 @@ public class BrowserManager {
 
 
     private WebDriver driver;
+    private Display display;
+
+    private DriverManager driverManager;
 
     private String WhattsAppurl = "https://web.whatsapp.com/";
 
-    private Display display = new Display();
 
     public BrowserManager(){
-        DriverManager driverManager = new DriverManager();
-        driver = driverManager.getDriver();
+        this.driverManager = new DriverManager();
+        this.display = new Display();
+        this.driver = driverManager.getDriver();
+
+    }
+    public void authenticate(){
+        display.start();
+        driver.get(WhattsAppurl);
+        //saveQrCode(qrImage);
+        display.displayQRCode(extractQRCode());
+
+        findLoadingElement(By.cssSelector("#app > div > div > div._3HbCE"), " Loading Screen Indicator", 10);
+        display.closeDisplay();
+        findLoadingElement(By.cssSelector("#side > div._3gYev > div > div > div._2vDPL > div > div > p"), "Authenticated Indicator", 10);
+        System.out.println("Authenticated");
+        driverManager.saveSession();
     }
 
-    public void getQRCode(){
-        display.displayQRCode();
-        navigateTo(WhattsAppurl);
+    public void loadActiveSession(){
+        driver.get(WhattsAppurl);
+        findLoadingElement(By.cssSelector("#side > div._3gYev > div > div > div._2vDPL > div > div > p"), "Authenticated Indicator", 10);
+        System.out.println("Authenticated");
+    }
 
-        BufferedImage qrImage = extractQRCode();
-        saveQrCode(qrImage);
+    public boolean hasActiveSession() {
+        return driverManager.hasActiveSession();
+    }
 
-
-
-
-        System.out.println("QR Code displayed");
-        //Wait until authenticated
-        while(true){
+    private WebElement findLoadingElement(By selector, String description, int timeout){
+        //wait until element is visible
+        for (int i = 0; i < timeout; i++) {
             try {
-                //Reload the QR after timeout
+                WebElement element = driver.findElement(selector);
+                System.out.println("Element found: " + description);
+                return element;
+            }catch (NoSuchElementException e){
+                //wait 1 second
                 try {
-                    driver.findElement(By.className("_2XiNU")).click();
-                }catch (NoSuchElementException e){
                     Thread.sleep(1000);
+                } catch (InterruptedException e1) {
+                    throw new RuntimeException(e1);
                 }
-
-            } catch (InterruptedException e) {
-                e.printStackTrace();
             }
         }
-        //window.closeDisplay();
-    }
-
-    private void saveQrCode(BufferedImage qrImage) {
-        File outputFile = new File("src/main/resources/QRCode.png");
-
-        try {
-            // Save the BufferedImage to the specified file as PNG
-            ImageIO.write(qrImage, "png", outputFile);
-            System.out.println("Image saved successfully.");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        throw new NoSuchElementException("Element not found: " + description);
     }
 
 
@@ -69,28 +74,19 @@ public class BrowserManager {
                 driver.findElement(By.className("_19vUU"));
 
                 WebElement canvas = driver.findElement(By.cssSelector("#app > div > div > div.landing-window > div.landing-main > div > div > div._2I5ox > div > canvas"));
-                //System.out.println(html.);
-                //WebElement canvas = null;
-                //convert WebElement to Image
+                JavascriptExecutor jsExecutor = (JavascriptExecutor) driver;
 
-                if (canvas != null) {
-                    JavascriptExecutor jsExecutor = (JavascriptExecutor) driver;
-
-                    // Execute JavaScript to get the canvas data URL
-                    String dataUrl = (String) jsExecutor.executeScript("return arguments[0].toDataURL('image/png').substring(22);", canvas);
-                    System.out.println(dataUrl);
-                    if (dataUrl != null && !dataUrl.isEmpty()) {
-                        // Decode the base64 data into a BufferedImage
-                        byte[] imageBytes = java.util.Base64.getDecoder().decode(dataUrl);
-                        try {
-                            BufferedImage bufferedImage = ImageIO.read(new ByteArrayInputStream(imageBytes));
-                            System.out.println("QR code extracted");
-                            return bufferedImage;
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }
-                    }else{
-                        System.out.println("No data url");
+                // Execute JavaScript to get the canvas data URL
+                String dataUrl = (String) jsExecutor.executeScript("return arguments[0].toDataURL('image/png').substring(22);", canvas);
+                if (dataUrl != null && !dataUrl.isEmpty()) {
+                    // Decode the base64 data into a BufferedImage
+                    byte[] imageBytes = java.util.Base64.getDecoder().decode(dataUrl);
+                    try {
+                        BufferedImage bufferedImage = ImageIO.read(new ByteArrayInputStream(imageBytes));
+                        System.out.println("QR code extracted");
+                        return bufferedImage;
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
                     }
                 }
             }catch (NoSuchElementException e){
@@ -105,8 +101,26 @@ public class BrowserManager {
         }
 
     }
-    private void navigateTo(String url){
-        driver.get(url);
-        //check if the page has been loaded
+
+
+
+    public void findChat(String chatName){
+        WebElement searchBox = driver.findElement(By.cssSelector("#side > div._3gYev > div > div > div._2vDPL > div > div > p"));
+        searchBox.sendKeys(chatName);
+        WebElement chat = findLoadingElement(By.cssSelector("#pane-side > div > div > div > div:nth-child(1) > div > div > div._3Dr46 > div._3ExzF > div._3Dr46 > span"), "Chat",10);
+        chat.click();
     }
+
+    private void saveQrCode(BufferedImage qrImage) {
+        File outputFile = new File("src/main/resources/QRCode.png");
+
+        try {
+            // Save the BufferedImage to the specified file as PNG
+            ImageIO.write(qrImage, "png", outputFile);
+            System.out.println("Image saved successfully.");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
 }
