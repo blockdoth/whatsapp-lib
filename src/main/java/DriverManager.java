@@ -1,39 +1,49 @@
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.chrome.ChromeDriverService;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.remote.RemoteWebDriver;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.time.Duration;
 import java.util.List;
 
 public class DriverManager {
 
     private WebDriver driver;
-    private boolean headless = false;
 
-    public WebDriver getDriver() {
-        ChromeOptions options = new ChromeOptions();
-        options.addArguments("--disable-blink-features=AutomationControlled");
-        //options.addArguments("window-size=1200,1000");
-        options.setExperimentalOption("excludeSwitches", List.of("enable-automation"));
-        options.addArguments("--incognito");
-        options.addArguments("user-data-dir=" + "src/main/resources/userData");
 
-        if(headless){
-            options.addArguments("--headless");
+    private static ChromeDriverService service;
+
+    public WebDriver getDriver(boolean headless) {
+        try {
+            service = new ChromeDriverService.Builder()
+                    .usingDriverExecutable(new File("src/main/resources/chromedriver.exe"))
+                    .usingAnyFreePort()
+                    .build();
+            service.start();
+
+            ChromeOptions options = new ChromeOptions();
+            if(headless){
+                options.addArguments("--headless");
+            }
+            options.addArguments("user-data-dir=" + "C:\\Users\\pepij\\AppData\\Local\\Google\\Chrome\\User Data\\Default");
+            options.addArguments("--disable-blink-features=AutomationControlled");
+            options.addArguments("window-size=1200,1000");
+            options.addArguments("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36");
+            options.setExperimentalOption("excludeSwitches", List.of("enable-automation"));
+
+            driver = new RemoteWebDriver(service.getUrl(), options);
+            driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(30));
+            return driver;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
-
-
-        this.driver = new ChromeDriver(options);
-        return driver;
     }
-
-    public boolean hasActiveSession() {
-        return false;
+    public void quit() {
+        driver.quit();
+        service.stop();
     }
-
-    public void saveSession(){
-
-
-    }
-
-
 }

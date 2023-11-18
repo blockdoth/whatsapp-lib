@@ -1,0 +1,5 @@
+enum BrowserState {
+    LOADING,
+    AUTHENTICATED,
+    LOADING_AUTHENTICATION
+}
