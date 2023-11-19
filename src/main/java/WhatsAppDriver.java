@@ -1,29 +1,35 @@
 import org.openqa.selenium.*;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
+import java.util.function.Predicate;
 
 public class WhatsAppDriver {
+
 
     private enum BrowserState {
         LOADING,
         AUTHENTICATED,
         NOT_AUTHENTICATED,
-        HOME_SCREEN, IN_CHAT
+        HOME_SCREEN, IN_CHAT;
+
     }
     private WebDriver driver;
     private Display display;
-
     private DriverManager driverManager;
-
     private String WhatsAppUrl = "https://web.whatsapp.com/";
 
     private BrowserState state = BrowserState.NOT_AUTHENTICATED;
 
-    private int timeout = 10;
+    private boolean debug = false;
+
+
 
     public WhatsAppDriver(){
         this.driverManager = new DriverManager();
@@ -40,34 +46,37 @@ public class WhatsAppDriver {
             findLoadingElement("Authenticated Indicator", By.cssSelector("#side > div._3gYev > div > div > div._2vDPL > div > div > p"),3);
             state = BrowserState.AUTHENTICATED;
             System.out.println("Authenticated");
+            findElement("Home Screen Indicator",By.cssSelector("#app > div > div > div._2Ts6i._3RGKj > header > div._3WByx > div > img"));
+            state = BrowserState.HOME_SCREEN;
+
         } catch (NoSuchElementException e) {
             state = BrowserState.NOT_AUTHENTICATED;
-            System.out.println("Not Authenticated");
-        }
-        if(state == BrowserState.NOT_AUTHENTICATED){
+            System.out.println("Not Authenticated, please scan QR");
             display.start();
             display.displayQRCode(extractQRCode());
             findLoadingElement("Authenticated Indicator", By.cssSelector("#side > div._3gYev > div > div > div._2vDPL > div > div > p"),100);
             display.closeDisplay();
         }
-        if(state == BrowserState.AUTHENTICATED){
-            findElement("Home Screen Indicator",By.cssSelector("#app > div > div > div._2Ts6i._3RGKj > header > div._3WByx > div > img"));
-            state = BrowserState.HOME_SCREEN;
-        }
     }
 
     private WebElement findElement(String name, By selector) throws NoSuchElementException{
-        System.out.println("Finding element: " + name);
+        if(debug){
+            System.out.println("Finding element: " + name);
+        }
         return driver.findElement(selector);
     }
 
     private WebElement findLoadingElement(String description,By selector, int timeout) throws NoSuchElementException{
         //wait until element is visible
-        System.out.println("Waiting for element: " + description);
+        if(debug){
+            System.out.println("Waiting for element: " + description);
+        }
         for (int i = 0; i < timeout; i++) {
             try {
                 WebElement element = driver.findElement(selector);
-                System.out.println("Element found: " + description);
+                if(debug){
+                    System.out.println("Element found: " + description);
+                }
                 return element;
             }catch (NoSuchElementException e){
                 //wait 1 second
@@ -96,7 +105,9 @@ public class WhatsAppDriver {
         byte[] imageBytes = java.util.Base64.getDecoder().decode(dataUrl);
         try {
             BufferedImage bufferedImage = ImageIO.read(new ByteArrayInputStream(imageBytes));
-            System.out.println("QR code extracted");
+            if(debug){
+                System.out.println("QR code extracted");
+            }
             return bufferedImage;
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -115,18 +126,25 @@ public class WhatsAppDriver {
         searchBar.sendKeys(chatName);
         //WebElement matchedChat = findLoadingElement("matchedChat",By.cssSelector("#app > div > div > div._2QgSC > div._2Ts6i._3RGKj._318SY > span > div > span > div > div.g0rxnol2.g0rxnol2.thghmljt.p357zi0d.rjo8vgbg.ggj6brxn.f8m0rgwh.gfz4du6o.ag5g9lrv.bs7a17vp.ov67bkzj > div > div > div > div:nth-child(2) > div > div > div._8nE1Y > div.y_sn4 > div > span"),5);
 
-        List<WebElement> matchedChats = driver.findElements(By.xpath("//*[@title='" + chatName + "']"));
-        if(matchedChats.size() == 0){
+        List<WebElement> matchedChats = driver.findElements(By.cssSelector("[title='" + chatName + "']"));
+        if(matchedChats.isEmpty()){
             throw new NoSuchElementException("Chat not found");
         }
+//        if(matchedChats.size() > 1){
+//            throw new RuntimeException("Multiple chats found");
+//        }
         WebElement matchedChat = matchedChats.get(0);
-
         if(matchedChat.getText().equals(chatName)){
-            matchedChat.click();
-            //WebElement title = findElement("ChatTitle", By.cssSelector("#main > header > div._2au8k > div._6u0RM > div > span"));
-//            if(!title.getText().equals(chatName)){
-//                throw new RuntimeException("Chat name does not match");
-//            }
+            searchBar.sendKeys(Keys.ENTER);
+            WebElement chatTitle;
+            try{
+                chatTitle = findElement("Chat name",By.cssSelector("#main > header > div._2au8k > div > div > div > span"));
+            }catch (NoSuchElementException e){
+                chatTitle = findElement("Chat name",By.cssSelector("#main > header > div._2au8k > div._6u0RM > div > span"));
+            }
+            if(!chatTitle.getText().equals(chatName)){
+                throw new NoSuchElementException("Wrong chat found");
+            }
             state = BrowserState.IN_CHAT;
         }else {
             throw new NoSuchElementException("Chat not found");
@@ -139,7 +157,64 @@ public class WhatsAppDriver {
         }
         WebElement messageBox = findElement("Message box",By.cssSelector("#main > footer > div._2lSWV._3cjY2.copyable-area > div > span:nth-child(2) > div > div._1VZX7 > div._3Uu1_ > div > div.to2l77zo.gfz4du6o.ag5g9lrv.bze30y65.kao4egtt > p"));
         messageBox.sendKeys(message);
-        WebElement sendButton = findElement("Send button",By.cssSelector("#main > footer > div._2lSWV._3cjY2.copyable-area > div > span:nth-child(2) > div > div._1VZX7 > div._2xy_p._3XKXx"));
-        sendButton.click();
+        messageBox.sendKeys(Keys.ENTER);
+//        WebElement sendButton = findElement("Send button",By.cssSelector("#main > footer > div._2lSWV._3cjY2.copyable-area > div > span:nth-child(2) > div > div._1VZX7 > div._2xy_p._3XKXx"));
+//        sendButton.click();
+
+    }
+
+    public void checkMessageSent(String test) {
+        if(state != BrowserState.IN_CHAT){
+            throw new RuntimeException("Not in chat");
+        }
+        List<WebElement> messagesSent = driver.findElements( By.className("_21Ahp"));
+        WebElement lastMessage = messagesSent.get(messagesSent.size()-1);
+        if(lastMessage.getText().equals(test)){
+            System.out.println("Message sent: " + lastMessage.getText());
+        }
+    }
+
+
+
+    public void waitForNewMessage(String message, Set<Message> allMessages, boolean toSelf, int pollDelay) {
+        if(state != BrowserState.IN_CHAT){
+            throw new RuntimeException("Not in chat");
+        }
+        LocalDateTime lastMessageTime = LocalDateTime.now().minusMinutes(1);
+        while (true){
+
+            List<WebElement> containers;
+            List<String> messageAttributes;
+            List<String> messageText;
+            if(toSelf){
+                containers = driver.findElements(By.cssSelector( "[role=\"application\"] > [role=\"row\"] > div > div > div.UzMP7._1uv-a > div._1BOF7._2AOIt > div > div > div.copyable-text"));
+            }else {
+                containers = driver.findElements(By.cssSelector("[role=\"row\"]> div > div > div._1uv-a > div._1BOF7 > div > div > div.copyable-text"));
+            }
+            try{
+                messageAttributes = containers.stream().map((webElement -> webElement.getAttribute("data-pre-plain-text"))).toList();
+                messageText = containers.stream().map((WebElement::getText)).toList();
+            }catch (StaleElementReferenceException e) {
+                continue;
+            }
+            for (int i = 0; i < containers.size(); i++) {
+                Message newMessage = new Message(messageAttributes.get(i), messageText.get(i), i);
+                if(!allMessages.contains(newMessage) && newMessage.getTimeStamp().isAfter(lastMessageTime)){
+                    System.out.println(newMessage);
+                    allMessages.add(newMessage);
+                    if(newMessage.getContent().equals(message)){
+                        return;
+                    }
+                }
+            }
+            try {
+                //System.out.println("Waiting for new message");
+                Thread.sleep(pollDelay);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 }
+
+
