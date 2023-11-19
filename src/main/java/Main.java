@@ -13,7 +13,7 @@ public class Main {
     public static void main(String[] args) {
         whatsAppDriver = new WhatsAppDriver();
         whatsAppDriver.authenticate();
-        whatsAppDriver.findChat("De binkie boys");
+        whatsAppDriver.findChat("Charlotte Zusje");
 
         rickroll();
     }

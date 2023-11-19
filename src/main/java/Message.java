@@ -15,11 +15,20 @@ public class Message {
     public Message(String attribute, String text, int messageNumber) {
         this.content = text;
         //Example string [17:04, 11/19/2023] Pepijn van Egmond: test 2
-        String sanitizedString = attribute.substring(0,19).replace("[","").replace("]","").stripTrailing().stripLeading();
+        String sanitizedString = attribute.substring(0,19).replace("[","").replace("]","").replace("24","00").stripTrailing();
+
         try{
-            timeStamp = LocalDateTime.parse(sanitizedString, DateTimeFormatter.ofPattern("[HH:mm, MM/dd/yyyy]"));
+            try{
+                timeStamp = LocalDateTime.parse(sanitizedString, DateTimeFormatter.ofPattern("[HH:mm, MM/dd/yyyy]"));
+            } catch (DateTimeParseException x){
+                timeStamp = LocalDateTime.parse(sanitizedString, DateTimeFormatter.ofPattern("[HH:mm, MM/d/yyyy]"));
+            }
         }catch (DateTimeParseException e){
-            timeStamp = LocalDateTime.parse(sanitizedString, DateTimeFormatter.ofPattern("[HH:mm, MM/d/yyyy]"));
+            try{
+                timeStamp = LocalDateTime.parse(sanitizedString, DateTimeFormatter.ofPattern("[HH:mm, M/dd/yyyy]"));
+            } catch (DateTimeParseException x){
+                timeStamp = LocalDateTime.parse(sanitizedString, DateTimeFormatter.ofPattern("[HH:mm, M/d/yyyy]"));
+            }
         }
         this.messageNumber = messageNumber;
     }
