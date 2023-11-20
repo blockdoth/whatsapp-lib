@@ -10,26 +10,31 @@ public class Message {
 
     private String content;
     private LocalDateTime timeStamp;
+    private String sender;
     private int messageNumber;
 
     public Message(String attribute, String text, int messageNumber) {
-        this.content = text;
         //Example string [17:04, 11/19/2023] Pepijn van Egmond: test 2
-        String sanitizedString = attribute.substring(0,19).replace("[","").replace("]","").replace("24","00").stripTrailing();
-
-        try{
-            try{
-                timeStamp = LocalDateTime.parse(sanitizedString, DateTimeFormatter.ofPattern("[HH:mm, MM/dd/yyyy]"));
-            } catch (DateTimeParseException x){
-                timeStamp = LocalDateTime.parse(sanitizedString, DateTimeFormatter.ofPattern("[HH:mm, MM/d/yyyy]"));
-            }
-        }catch (DateTimeParseException e){
-            try{
-                timeStamp = LocalDateTime.parse(sanitizedString, DateTimeFormatter.ofPattern("[HH:mm, M/dd/yyyy]"));
-            } catch (DateTimeParseException x){
-                timeStamp = LocalDateTime.parse(sanitizedString, DateTimeFormatter.ofPattern("[HH:mm, M/d/yyyy]"));
-            }
+        String sanitizedString = attribute.replace("[", "").replace("]", "");
+        String[] splitString = sanitizedString.split(" ");
+        String[] time = splitString[0].split(":");
+        String[] date = splitString[1].split("/");
+        String minute = time[1].replace(",", "");
+        String hour = time[0].replace("24", "") ;
+        String day = date[0];
+        String month = date[1];
+        String year = date[2];
+        if(day.length() == 1){
+            day = "0" + day;
         }
+        if(month.length() == 1){
+            month = "0" + month;
+        }
+        timeStamp = LocalDateTime.parse( hour + minute + day + month + year, DateTimeFormatter.ofPattern("[HHmmMMddyyyy]"));
+        for(int i = 2;i<splitString.length;i++){
+            sender += splitString[i];
+        }
+        content = text;
         this.messageNumber = messageNumber;
     }
 

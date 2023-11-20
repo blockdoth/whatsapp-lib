@@ -1,13 +1,17 @@
 import org.openqa.selenium.*;
+import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 public class WhatsAppDriver {
@@ -28,6 +32,8 @@ public class WhatsAppDriver {
     private BrowserState state = BrowserState.NOT_AUTHENTICATED;
 
     private boolean debug = false;
+
+    private Set<Message> allMessages = new HashSet<>();
 
 
 
@@ -116,7 +122,7 @@ public class WhatsAppDriver {
 
 
 
-    public void findChat(String chatName){
+    public void findChat(String chatName) throws NoSuchElementException{
         if(state != BrowserState.HOME_SCREEN && state != BrowserState.IN_CHAT){
             throw new RuntimeException("Not on home screen");
         }
@@ -156,11 +162,7 @@ public class WhatsAppDriver {
             throw new RuntimeException("Not in chat");
         }
         WebElement messageBox = findElement("Message box",By.cssSelector("#main > footer > div._2lSWV._3cjY2.copyable-area > div > span:nth-child(2) > div > div._1VZX7 > div._3Uu1_ > div > div.to2l77zo.gfz4du6o.ag5g9lrv.bze30y65.kao4egtt > p"));
-        messageBox.sendKeys(message);
-        messageBox.sendKeys(Keys.ENTER);
-//        WebElement sendButton = findElement("Send button",By.cssSelector("#main > footer > div._2lSWV._3cjY2.copyable-area > div > span:nth-child(2) > div > div._1VZX7 > div._2xy_p._3XKXx"));
-//        sendButton.click();
-
+        messageBox.sendKeys(message + Keys.ENTER);
     }
 
     public void checkMessageSent(String test) {
@@ -176,7 +178,7 @@ public class WhatsAppDriver {
 
 
 
-    public void waitForNewMessage(String message, Set<Message> allMessages, boolean toSelf, int pollDelay) {
+    public void waitForNewMessage(String message, int pollDelay) {
         if(state != BrowserState.IN_CHAT){
             throw new RuntimeException("Not in chat");
         }
@@ -186,9 +188,9 @@ public class WhatsAppDriver {
             List<WebElement> containers;
             List<String> messageAttributes;
             List<String> messageText;
-            if(toSelf){
-                containers = driver.findElements(By.cssSelector( "[role=\"application\"] > [role=\"row\"] > div > div > div.UzMP7._1uv-a > div._1BOF7._2AOIt > div > div > div.copyable-text"));
-            }else {
+            try{
+                containers = driver.findElements(By.cssSelector("[role=\"row\"] > div > div > div.UzMP7._1uv-a > div._1BOF7._2AOIt > div > div > div.copyable-text"));
+            }catch (StaleElementReferenceException e) {
                 containers = driver.findElements(By.cssSelector("[role=\"row\"]> div > div > div._1uv-a > div._1BOF7 > div > div > div.copyable-text"));
             }
             try{
@@ -203,6 +205,60 @@ public class WhatsAppDriver {
                     System.out.println(newMessage);
                     allMessages.add(newMessage);
                     if(newMessage.getContent().equals(message)){
+                        return;
+                    }
+                }
+            }
+            try {
+                //System.out.println("Waiting for new message");
+                Thread.sleep(pollDelay);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+
+    public void replyToMessage(String message,String reply, int pollDelay) {
+        if(state != BrowserState.IN_CHAT){
+            throw new RuntimeException("Not in chat");
+        }
+        LocalDateTime lastMessageTime = LocalDateTime.now().minusMinutes(1);
+        while (true){
+
+            List<WebElement> containers;
+            List<String> messageAttributes;
+            List<String> messageText;
+            try{
+                containers = driver.findElements(By.cssSelector("[role=\"row\"] > div > div > div.UzMP7._1uv-a > div._1BOF7._2AOIt > div > div > div.copyable-text"));
+            }catch (StaleElementReferenceException e) {
+                containers = driver.findElements(By.cssSelector("[role=\"row\"]> div > div > div._1uv-a > div._1BOF7 > div > div > div.copyable-text"));
+            }
+            try{
+                messageAttributes = containers.stream().map((webElement -> webElement.getAttribute("data-pre-plain-text"))).toList();
+                messageText = containers.stream().map((WebElement::getText)).toList();
+            }catch (StaleElementReferenceException e) {
+                continue;
+            }
+
+            for (int i = 0; i < containers.size(); i++) {
+                Message newMessage = new Message(messageAttributes.get(i), messageText.get(i), i);
+                if(!allMessages.contains(newMessage) && newMessage.getTimeStamp().isAfter(lastMessageTime)){
+                    System.out.println(newMessage);
+                    System.out.println(messageAttributes.size());
+                    allMessages.add(newMessage);
+                    if(newMessage.getContent().equals(message)){
+                        WebElement messageBox = findElement("Message box",By.cssSelector("#main > footer > div._2lSWV._3cjY2.copyable-area > div > span:nth-child(2) > div > div._1VZX7 > div._3Uu1_ > div > div.to2l77zo.gfz4du6o.ag5g9lrv.bze30y65.kao4egtt > p"));
+                        messageBox.sendKeys(reply + Keys.ENTER);
+
+                        WebElement messageContainer = driver.findElement(By.cssSelector("[role=\"row\"]:nth-child("+ (i +2) +") > div > div > div._1uv-a > div._1BOF7 > div > div > div.copyable-text"));
+                        new Actions(driver).moveToElement(messageContainer).click().perform();
+                        WebElement dropUpBox = driver.findElement(By.cssSelector("#main > div._3B19s > div > div._5kRIK > div.n5hs2j7m.oq31bsqd.gx1rr48f.qh5tioqs > div:nth-child(15) > div > div > div.UzMP7._1uv-a._3m5cz > div._1BOF7._2AOIt > span > div > div"));
+                        dropUpBox.click();
+                        int option = 1;
+                        WebElement selectedOptions = driver.findElement(By.cssSelector("#app > div > span:nth-child(4) > div > ul > div > li:nth-child(" + option +")"));
+                        selectedOptions.click();
+
                         return;
                     }
                 }

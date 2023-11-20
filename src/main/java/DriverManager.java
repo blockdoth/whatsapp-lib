@@ -29,6 +29,7 @@ public class DriverManager {
             if(headless){
                 options.addArguments("--headless");
             }
+            options.addArguments("log-level=3");
             options.addArguments("user-data-dir=" + "C:\\Users\\pepij\\AppData\\Local\\Google\\Chrome\\User Data\\Default");
             options.addArguments("--disable-blink-features=AutomationControlled");
             options.addArguments("window-size=1200,1000");

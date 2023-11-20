@@ -6,8 +6,10 @@
   <component name="ChangeListManager">
     <list default="true" id="a1381a16-42b9-43b6-aa2d-7363d58868b1" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/DriverManager.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/DriverManager.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/Main.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/Message.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/Message.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/WhatsAppDriver.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/WhatsAppDriver.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -155,5 +157,16 @@
         </entry>
       </map>
     </option>
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/main/java/WhatsAppDriver.java</url>
+          <line>213</line>
+          <option name="timeStamp" value="3" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>
