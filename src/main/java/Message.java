@@ -10,10 +10,10 @@ public class Message {
 
     private String content;
     private LocalDateTime timeStamp;
-    private String sender;
+    private String sender = "";
     private int messageNumber;
 
-    public Message(String attribute, String text, int messageNumber) {
+    public Message(String attribute, String text) {
         //Example string [17:04, 11/19/2023] Pepijn van Egmond: test 2
         String sanitizedString = attribute.replace("[", "").replace("]", "");
         String[] splitString = sanitizedString.split(" ");
@@ -30,12 +30,13 @@ public class Message {
         if(month.length() == 1){
             month = "0" + month;
         }
-        timeStamp = LocalDateTime.parse( hour + minute + day + month + year, DateTimeFormatter.ofPattern("[HHmmMMddyyyy]"));
+
+        timeStamp = LocalDateTime.parse( minute + hour + day + month + year, DateTimeFormatter.ofPattern("[mmHHMMddyyyy]"));
         for(int i = 2;i<splitString.length;i++){
-            sender += splitString[i];
+            sender += splitString[i] + " ";
         }
+        sender = sender.replace(": ","");
         content = text;
-        this.messageNumber = messageNumber;
     }
 
 
@@ -48,7 +49,7 @@ public class Message {
     }
 
     public String toString() {
-        return "[" + timeStamp + "]\t" + content;
+        return "[" + timeStamp + "] " + sender + ">\t" + content + " number:\t" + messageNumber;
     }
 
     public int getMessageNumber() {
@@ -65,5 +66,13 @@ public class Message {
         if (o == null || getClass() != o.getClass()) return false;
         Message message = (Message) o;
         return messageNumber == message.messageNumber && Objects.equals(content, message.content) && Objects.equals(timeStamp, message.timeStamp);
+    }
+
+    public String getSender() {
+        return sender;
+    }
+
+    public void addOffSet(int offSet) {
+        messageNumber = offSet;
     }
 }
